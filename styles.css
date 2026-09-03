@@ -192,8 +192,19 @@ button{ font-family: inherit; cursor: pointer; }
 .rocket-cta-btn:hover{ background:#e6b453; }
 .rocket-cta-btn:disabled{ background:var(--panel-raised); color:var(--muted-2); }
 
-.rocket-lobby-head{ display:flex; flex-direction:column; align-items:flex-start; gap:10px; margin:24px 0 20px; }
+.rocket-lobby-head{ display:flex; flex-direction:column; align-items:flex-start; gap:10px; margin:24px 0 16px; }
 .rocket-lobby-head h1{ margin:0; font-family:var(--font-serif); font-size:24px; }
+.rocket-create-inline{
+  display:flex; flex-wrap:wrap; align-items:flex-end; gap:14px;
+  background:var(--panel); border:1px solid var(--hairline); border-radius:12px;
+  padding:16px 18px; margin-bottom:20px;
+}
+.rocket-create-inline .propose-field{ margin-bottom:0; min-width:140px; }
+.rocket-create-inline input{
+  background: var(--panel-raised); border:1px solid var(--hairline); border-radius:7px;
+  padding: 10px 11px; color:var(--text); font-size:13px; font-family:inherit;
+}
+.rocket-create-inline input:focus-visible{ border-color: var(--gold); outline:none; }
 .rocket-room-list{ display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; }
 .rocket-room-card{
   background:var(--panel); border:1px solid var(--hairline); border-radius:12px; padding:14px 16px;

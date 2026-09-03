@@ -34,9 +34,6 @@
   var spectateReserveBtn = document.getElementById('rocket-spectate-reserve-btn');
   var restartBtn = document.getElementById('rocket-restart-btn');
   var statusMsgEl = document.getElementById('rocket-room-status-msg');
-  var openCreateModalBtn = document.getElementById('open-rocket-create-modal');
-  var createBackdrop = document.getElementById('rocket-create-backdrop');
-  var createModalCloseBtn = document.getElementById('rocket-create-modal-close');
   var createNicknameInput = document.getElementById('rocket-create-nickname');
   var createEntryFeeInput = document.getElementById('rocket-create-entry-fee');
   var createSubmitBtn = document.getElementById('rocket-create-submit-btn');
@@ -87,20 +84,11 @@
     renderRoomList(snap.val());
   });
 
-  // ---------- 방 생성 모달 ----------
-  function openCreateModal() {
-    if (!window.rgRealUser) { window.rgOpenLoginModal && window.rgOpenLoginModal(); return; }
-    createNicknameInput.value = recalledNickname();
-    createEntryFeeInput.value = '10000';
-    createStatusEl.textContent = '';
-    createBackdrop.classList.add('open');
-  }
-  function closeCreateModal() { createBackdrop.classList.remove('open'); }
-  if (openCreateModalBtn) openCreateModalBtn.addEventListener('click', openCreateModal);
-  if (createModalCloseBtn) createModalCloseBtn.addEventListener('click', closeCreateModal);
-  createBackdrop.addEventListener('click', function (e) { if (e.target === createBackdrop) closeCreateModal(); });
+  // ---------- 방 생성(로비에 바로 노출되는 인라인 폼 — 모달 없음) ----------
+  createNicknameInput.value = recalledNickname();
 
   createSubmitBtn.addEventListener('click', function () {
+    if (!window.rgTrusted) { window.rgOpenLoginModal && window.rgOpenLoginModal(); return; }
     var nickname = createNicknameInput.value.trim();
     var entryFee = Number(createEntryFeeInput.value);
     if (!nickname) { createStatusEl.textContent = '닉네임을 입력해 주세요.'; return; }
@@ -109,7 +97,7 @@
     fb.httpsCallable('createRocketRoom')({ nickname: nickname, entryFee: entryFee }).then(function (res) {
       rememberNickname(nickname);
       createSubmitBtn.disabled = false;
-      closeCreateModal();
+      createStatusEl.textContent = '';
       openRoom(res.data.roomId);
     }).catch(function (e) {
       createSubmitBtn.disabled = false;
@@ -300,9 +288,9 @@
       heightReadoutEl.textContent = '발사 대기 중';
       runCanvasLoop(function () { return 0; }, function () { return true; });
       if (!me) {
-        if (!window.rgRealUser) {
+        if (!window.rgTrusted) {
           waitingInfoEl.style.display = '';
-          waitingInfoEl.textContent = 'Google 로그인하면 탑승할 수 있어요.';
+          waitingInfoEl.textContent = '로그인(또는 스트리머 인증)하면 탑승할 수 있어요.';
         } else {
           boardingFormEl.style.display = '';
           joinNicknameInput.value = recalledNickname();
@@ -341,7 +329,7 @@
         spectateReserveBtn.style.display = '';
         spectateReserveBtn.textContent = reserved ? '다음 라운드 참가 예약 취소' : '다음 라운드 참가 예약';
         spectateReserveBtn.onclick = function () {
-          if (!window.rgRealUser) { window.rgOpenLoginModal && window.rgOpenLoginModal(); return; }
+          if (!window.rgTrusted) { window.rgOpenLoginModal && window.rgOpenLoginModal(); return; }
           var nickname = reserved ? '' : (recalledNickname() || room.hostNickname);
           fb.httpsCallable('spectateNextRound')({ roomId: roomId, nickname: nickname, wantsNextRound: !reserved }).catch(function (e) {
             statusMsgEl.textContent = e.message || '처리에 실패했어요.';
@@ -394,7 +382,7 @@
   window.addEventListener('resize', function () { if (currentRoomId) resizeCanvas(); });
 
   joinSubmitBtn.addEventListener('click', function () {
-    if (!window.rgRealUser) { window.rgOpenLoginModal && window.rgOpenLoginModal(); return; }
+    if (!window.rgTrusted) { window.rgOpenLoginModal && window.rgOpenLoginModal(); return; }
     var nickname = joinNicknameInput.value.trim();
     if (!nickname) { statusMsgEl.textContent = '닉네임을 입력해 주세요.'; return; }
     joinSubmitBtn.disabled = true;
