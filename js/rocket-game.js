@@ -272,7 +272,18 @@
     var isAdmin = !!window.rgIsAdmin;
 
     roomTitleEl.textContent = room.hostNickname + '님의 방 · 판돈 ' + Number(room.entryFee || 0).toLocaleString('ko-KR') + '원';
-    potReadoutEl.textContent = room.pot ? '판돈 ' + Number(room.pot).toLocaleString('ko-KR') + '원' : '';
+    if (room.pot) {
+      // 발사 이후엔 서버가 확정한 판돈(사람 참가자 수 * 판돈 — 봇은 실제 화폐를 안 냄)을 그대로.
+      potReadoutEl.textContent = '판돈 ' + Number(room.pot).toLocaleString('ko-KR') + '원';
+    } else if (room.status === 'waiting') {
+      // 발사 전엔 서버가 아직 pot을 계산해두지 않으므로, 지금까지 탑승한 사람 수 기준으로
+      // 클라이언트가 미리 보여준다(봇은 실제 화폐를 안 내므로 인원 수에서 제외).
+      var humanBoardedCount = Object.keys(participants).filter(function (pUid) { return !participants[pUid].isBot; }).length;
+      var estimatedPot = humanBoardedCount * Number(room.entryFee || 0);
+      potReadoutEl.textContent = '현재 판돈 ' + estimatedPot.toLocaleString('ko-KR') + '원(탑승 ' + humanBoardedCount + '명)';
+    } else {
+      potReadoutEl.textContent = '';
+    }
     closeRoomBtn.textContent = isHost ? '방 닫기' : '방 강제 종료(관리자)';
     closeRoomBtn.style.display = (isAdmin || (isHost && room.status === 'waiting')) ? '' : 'none';
     boardingFormEl.style.display = 'none';
