@@ -51,8 +51,16 @@
     var fb = window.rgFirebase;
     var uid = e.detail.user.uid;
     unsubscribeProfile = fb.onValue(fb.ref(window.rgDb, 'rocketGame/profiles/' + uid), function (snap) {
-      currentProfile = snap.val() || { nickname: (e.detail.realUser && e.detail.realUser.displayName) || '', soopId: '', avatarUrl: '' };
-      applyButtonState(currentProfile.nickname, currentProfile.avatarUrl);
+      var saved = snap.val();
+      currentProfile = saved || { nickname: '', soopId: '', avatarUrl: '' };
+      // 프로필을 아직 한 번도 저장한 적 없으면(닉네임도, 아바타도 없으면) 구글 실명 등을
+      // 그대로 노출하는 대신 "OO 로그인 완료"를 보여준다 — 로그인 직후 상단 버튼에
+      // 뜨는 게 방 닉네임 입력칸보다 자연스럽다는 사용자 피드백 반영.
+      if (currentProfile.nickname || currentProfile.avatarUrl) {
+        applyButtonState(currentProfile.nickname, currentProfile.avatarUrl);
+      } else {
+        applyButtonState((window.rgLoginMethodLabel && window.rgLoginMethodLabel()) || '로그인 완료', '');
+      }
     });
   });
 
