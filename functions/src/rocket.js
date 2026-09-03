@@ -1,6 +1,6 @@
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { getDatabase } = require('firebase-admin/database');
-const { requireAuth, requireRealAccount, assertNotBanned } = require('./lib/auth');
+const { requireAuth, requireRealAccount, assertNotBanned, isAdmin } = require('./lib/auth');
 const { ensureWallet, adjustBalance } = require('./lib/wallet');
 const { logAudit } = require('./lib/audit');
 const {
@@ -384,8 +384,14 @@ const closeRocketRoom = onCall(async (request) => {
   const snap = await roomRef(roomId).get();
   if (!snap.exists()) return { ok: true }; // 이미 없음
   const room = snap.val();
-  if (room.hostUid !== uid) throw new HttpsError('permission-denied', '호스트만 방을 닫을 수 있습니다.');
-  if (room.status !== 'waiting') {
+  // 관리자는 통합관리센터(adminCenter/adminUids) 판정으로 호스트가 아니어도, 비행
+  // 중이어도 강제로 방을 닫을 수 있다(악용/방치된 방 정리용) — 그 외엔 호스트만,
+  // waiting 상태에서만 가능(정산 붕괴 방지).
+  const isAdminCaller = await isAdmin(uid, request.auth.token && request.auth.token.email);
+  if (room.hostUid !== uid && !isAdminCaller) {
+    throw new HttpsError('permission-denied', '호스트만 방을 닫을 수 있습니다.');
+  }
+  if (room.status !== 'waiting' && !isAdminCaller) {
     throw new HttpsError('failed-precondition', '비행 중에는 방을 닫을 수 없습니다. 라운드가 끝난 뒤 다시 시도해 주세요.');
   }
 
@@ -397,6 +403,10 @@ const closeRocketRoom = onCall(async (request) => {
 
   await secretRef(roomId).remove();
   await roomRef(roomId).remove();
+  if (isAdminCaller && room.hostUid !== uid) {
+    const actorName = (request.auth.token && request.auth.token.name) || uid;
+    await logAudit(uid, actorName, '로켓 게임 방 강제 종료', '호스트: ' + room.hostNickname);
+  }
   return { ok: true };
 });
 

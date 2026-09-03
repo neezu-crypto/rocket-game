@@ -2,6 +2,10 @@
 // 서버에서부터 차단(StreamBet-Market과 동일한 정규식).
 const NICKNAME_FORBIDDEN_RE = /[<>\x00-\x1F\x7F]/;
 
+// 관리자 판별 이메일 폴백(자매 저장소들과 동일 — adminCenter/adminUids에 uid가
+// 아직 등록 안 됐을 때만 쓰인다).
+const ADMIN_EMAIL = 'skftodwocks2@gmail.com';
+
 const AUDIT_LOG_CAP = 200; // "최근 처리 내역" — 이 개수를 넘는 오래된 항목은 매 기록 시 삭제
 
 // 로켓 크래시 게임 — 승자독식(마지막 탈출자가 판돈 전액 획득) 겜블링 미니게임.
@@ -23,6 +27,7 @@ const ROCKET_ASCENT_QUADRATIC = 6; // b — 갈수록 가속
 
 module.exports = {
   NICKNAME_FORBIDDEN_RE,
+  ADMIN_EMAIL,
   AUDIT_LOG_CAP,
   ROCKET_ENTRY_STEP,
   ROCKET_ENTRY_MIN,

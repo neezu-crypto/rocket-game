@@ -42,6 +42,29 @@ button{ font-family: inherit; cursor: pointer; }
 ::selection{ background: var(--gold-dim); color: var(--gold-text); }
 :focus-visible{ outline: 2px solid var(--gold); outline-offset: 2px; }
 
+/* ---------- Dev bar ---------- */
+.devbar{ background: #0e1116; border-bottom: 1px solid var(--hairline); position: relative; z-index: 30; }
+.devbar-inner{
+  max-width: 1180px; margin: 0 auto; padding: 7px 20px;
+  display:flex; align-items:center; gap:16px;
+}
+.devbar-label{ font-size:11px; color: var(--text); letter-spacing:.04em; flex-shrink:0; white-space:nowrap; align-self:center; }
+.devbar-viewport{ flex:1 1 auto; min-width:0; overflow:hidden; }
+.devbar-track{ display:flex; gap:8px; width:max-content; }
+.devbar-track.auto-scroll{ animation: devbar-scroll var(--devbar-duration, 20s) linear infinite; }
+.devbar-track.auto-scroll:hover{ animation-play-state:paused; }
+@keyframes devbar-scroll{ from{ transform: translateX(0); } to{ transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce){
+  .devbar-track.auto-scroll{ animation:none; }
+  .devbar-viewport{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+}
+.dev-game-link{
+  flex-shrink:0; white-space:nowrap; padding:6px 11px; border-radius:6px;
+  border:none; background: var(--ink); color: var(--text);
+  font-size:12px; font-weight:600; transition: background .12s ease;
+}
+.dev-game-link:hover{ background: var(--panel-raised); }
+
 .app{ max-width: 1180px; margin: 0 auto; padding: 0 20px 96px; }
 
 /* ---------- Topbar ---------- */

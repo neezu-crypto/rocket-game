@@ -272,10 +272,14 @@
     var participants = room.participants || {};
     var me = uid && participants[uid];
     var isHost = uid && room.hostUid === uid;
+    // 통합관리센터 관리자는 호스트가 아니어도, 비행 중이어도 방을 강제로 닫을 수 있다
+    // (서버 closeRocketRoom도 동일하게 허용 — functions/src/rocket.js 참고).
+    var isAdmin = !!window.rgIsAdmin;
 
     roomTitleEl.textContent = room.hostNickname + '님의 방 · 판돈 ' + Number(room.entryFee || 0).toLocaleString('ko-KR') + '원';
     potReadoutEl.textContent = room.pot ? '판돈 ' + Number(room.pot).toLocaleString('ko-KR') + '원' : '';
-    closeRoomBtn.style.display = (isHost && room.status === 'waiting') ? '' : 'none';
+    closeRoomBtn.textContent = isHost ? '방 닫기' : '방 강제 종료(관리자)';
+    closeRoomBtn.style.display = (isAdmin || (isHost && room.status === 'waiting')) ? '' : 'none';
     boardingFormEl.style.display = 'none';
     waitingInfoEl.style.display = 'none';
     launchBtn.style.display = 'none';

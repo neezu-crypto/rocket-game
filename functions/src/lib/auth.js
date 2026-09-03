@@ -1,5 +1,6 @@
 const { HttpsError } = require('firebase-functions/v2/https');
 const { getDatabase } = require('firebase-admin/database');
+const { ADMIN_EMAIL } = require('../constants');
 
 // uid 위변조 검증 원칙 — 대상 uid는 항상 request.auth.uid에서만 가져온다.
 function requireAuth(request) {
@@ -37,8 +38,28 @@ async function assertNotBanned(uid) {
   }
 }
 
+// 관리자 판별 — StreamBet-Market·soop-stock-market·interior-3d-viewer와 동일하게
+// 공유 adminCenter/adminUids uid 조회를 기준으로 하고, uid 미등록 시에만 이메일로
+// 폴백한다(admin-center와 같은 전환 방식).
+async function isAdminUid(uid) {
+  const db = getDatabase();
+  const snap = await db.ref('adminCenter/adminUids/' + uid).get();
+  return snap.val() === true;
+}
+
+async function isAdmin(uid, email) {
+  if (await isAdminUid(uid)) return true;
+  if (email && email === ADMIN_EMAIL) {
+    console.warn('관리자 판별 이메일 폴백 사용됨(uid 미등록):', uid);
+    return true;
+  }
+  return false;
+}
+
 module.exports = {
   requireAuth,
   requireRealAccount,
   assertNotBanned,
+  isAdminUid,
+  isAdmin,
 };
