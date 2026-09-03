@@ -119,7 +119,8 @@
   var EXPLOSION_DURATION_MS = 900;
   var EXPLOSION_COLORS = ['#ffb347', '#ff6b4a', '#00f2ea', '#a855f7', '#fff6c8'];
   var explosionParticles = [];
-  var lastExplosionKey = null; // roomId:resolvedAt — 같은 라운드에서 재렌더링될 때 폭발 이펙트를 다시 재생하지 않기 위한 가드.
+  var lastExplosionKey = null; // roomId:launchedAt — 같은 라운드에서 재렌더링될 때 폭발 이펙트를 다시 재생하지 않기 위한 가드.
+  var frozenExplosionElapsedMs = 0; // 폭발 순간 카메라를 고정할 고도(elapsedMs) — lastExplosionKey와 함께 갱신.
 
   function spawnExplosionParticles() {
     explosionParticles = [];
@@ -336,6 +337,7 @@
     stopCanvasLoop();
     particles = [];
     lastExplosionKey = null;
+    frozenExplosionElapsedMs = 0;
     if (unsubscribeRoom) { unsubscribeRoom(); unsubscribeRoom = null; }
     if (stageEl.__rocketTapHandler) {
       stageEl.removeEventListener('click', stageEl.__rocketTapHandler);
@@ -415,9 +417,7 @@
       return;
     }
 
-    if (room.status === 'flying' || room.status === 'resolving') {
-      // 'resolving'은 서버가 승자를 계산하는 아주 짧은 찰나의 중간 상태 — 화면은
-      // 그냥 비행 중과 동일하게 보여준다(곧바로 resolved로 넘어감).
+    if (room.status === 'flying') {
       var launchedAt = room.launchedAt;
       startPolling(roomId);
       var escaped = !!(me && room.escapes && room.escapes[uid]);
@@ -451,33 +451,38 @@
       return;
     }
 
-    // resolved — 로켓이 폭발한 순간. 실제 폭발 시점(crashElapsedMs)은 서버가 끝까지 비밀로
-    // 감추는 값이라(roomsSecrets, .read:false) 클라이언트가 정확히는 모르지만, 공개 필드인
-    // launchedAt/resolvedAt 차이로 근사한 시점을 구해 그 고도에 카메라를 고정한다 — 폴링
-    // 주기(1.5초)만큼 오차가 있을 수 있지만 연출용 위치라 문제없다.
+    // resolving/resolved — 로켓이 폭발한 순간. 서버는 status를 flying→resolving(정산
+    // 진행 중)→resolved(정산 완료) 순으로 전이시키는데, escapeRocket은 status가 flying이
+    // 아니면 즉시 거절하므로(functions/src/rocket.js) 탈출 가능 여부는 이미 그 시점부터
+    // 서버에서 막혀 있다 — 클라이언트도 같은 순간부터(resolving부터) 탈출 버튼/힌트를
+    // 없애고 높이를 그 자리에 고정해 서버 판정과 화면이 어긋나지 않게 한다. resolving을
+    // resolved와 동일하게 취급해 폭발 연출을 즉시 재생하고, 최종 정산 문구만 resolution
+    // 필드가 도착한 뒤(=resolved) 채운다.
+    stopPolling();
     heightReadoutEl.textContent = '💥 폭발!';
     var res = room.resolution || {};
-    var crashElapsedEstimate = Math.min(MAX_FLIGHT_MS, Math.max(0,
-      (res.resolvedAt && room.launchedAt) ? (res.resolvedAt - room.launchedAt) : MAX_FLIGHT_MS));
-    var explosionKey = roomId + ':' + (res.resolvedAt || 0);
+    var explosionKey = roomId + ':' + room.launchedAt;
     if (lastExplosionKey !== explosionKey) {
       lastExplosionKey = explosionKey;
+      frozenExplosionElapsedMs = Math.min(MAX_FLIGHT_MS, Math.max(0, Date.now() - room.launchedAt));
       spawnExplosionParticles();
-      runExplosionLoop(crashElapsedEstimate, Date.now());
+      runExplosionLoop(frozenExplosionElapsedMs, Date.now());
     } else {
       // 이미 재생한 라운드(재렌더링) — 애니메이션을 다시 재생하지 않고 다 사그라든
       // 정지 화면만 유지한다.
-      runExplosionLoop(crashElapsedEstimate, Date.now() - EXPLOSION_DURATION_MS - 1);
+      runExplosionLoop(frozenExplosionElapsedMs, Date.now() - EXPLOSION_DURATION_MS - 1);
     }
     resultBannerEl.style.display = '';
-    if (res.winnerUid && !res.isBot) {
+    if (room.status === 'resolving') {
+      resultBannerEl.textContent = '💥 폭발! 정산 중...';
+    } else if (res.winnerUid && !res.isBot) {
       resultBannerEl.textContent = '👑 ' + res.winnerNickname + '님이 ' + Number(res.amount).toLocaleString('ko-KR') + '원을 획득했습니다!';
     } else if (res.winnerUid && res.isBot) {
       resultBannerEl.textContent = '🤖 봇(' + res.winnerNickname + ')이 마지막까지 버텨 판돈이 사라졌습니다.';
     } else {
       resultBannerEl.textContent = '💥 아무도 탈출하지 못해 판돈이 사라졌습니다.';
     }
-    if (isHost) restartBtn.style.display = '';
+    if (isHost && room.status === 'resolved') restartBtn.style.display = '';
   }
 
   function openRoom(roomId) {
