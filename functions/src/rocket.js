@@ -13,7 +13,9 @@ const {
   ROCKET_BOT_COUNT_MAX,
   ROCKET_MIN_FLIGHT_MS,
   ROCKET_MAX_FLIGHT_MS,
-  ROCKET_CRASH_LAMBDA,
+  ROCKET_CRASH_MID_START_MS,
+  ROCKET_CRASH_MID_END_MS,
+  ROCKET_CRASH_MID_WEIGHT,
   NICKNAME_FORBIDDEN_RE,
 } = require('./constants');
 
@@ -51,13 +53,20 @@ function validateEntryFee(entryFee) {
   return fee;
 }
 
-// 폭발 시점(ms) — 지수분포 역변환 샘플링 후 [MIN,MAX]로 clamp. 발사 시 한 번만 뽑아
-// rocketGame/roomsSecrets에만 저장 — 클라이언트가 미리 알면 "폭발 직전에만 탈출"하는
-// 치팅이 가능해지므로 라운드가 끝나기 전까지는 절대 공개하지 않는다.
+// 폭발 시점(ms) — 3구간 가중 샘플링(1.5~5초 25% / 5~15초 50% / 15~30초 25%, 각 구간
+// 내부는 균등분포)으로 뽑는다. 발사 시 한 번만 뽑아 rocketGame/roomsSecrets에만 저장 —
+// 클라이언트가 미리 알면 "폭발 직전에만 탈출"하는 치팅이 가능해지므로 라운드가 끝나기
+// 전까지는 절대 공개하지 않는다.
 function sampleCrashElapsedMs() {
+  const sideWeight = (1 - ROCKET_CRASH_MID_WEIGHT) / 2;
   const u = Math.random();
-  const raw = -Math.log(1 - u) / ROCKET_CRASH_LAMBDA;
-  return Math.min(Math.max(Math.round(raw), ROCKET_MIN_FLIGHT_MS), ROCKET_MAX_FLIGHT_MS);
+  if (u < sideWeight) {
+    return Math.round(ROCKET_MIN_FLIGHT_MS + Math.random() * (ROCKET_CRASH_MID_START_MS - ROCKET_MIN_FLIGHT_MS));
+  }
+  if (u < sideWeight + ROCKET_CRASH_MID_WEIGHT) {
+    return Math.round(ROCKET_CRASH_MID_START_MS + Math.random() * (ROCKET_CRASH_MID_END_MS - ROCKET_CRASH_MID_START_MS));
+  }
+  return Math.round(ROCKET_CRASH_MID_END_MS + Math.random() * (ROCKET_MAX_FLIGHT_MS - ROCKET_CRASH_MID_END_MS));
 }
 
 // 봇 탈출 시점 — 완전 무작위, 폭발 시점과 무관하게 균등분포로 미리 고정.

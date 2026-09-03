@@ -27,7 +27,11 @@ const ROCKET_BOT_COUNT_MIN = 2;
 const ROCKET_BOT_COUNT_MAX = 3; // 방마다 2~3명 고정
 const ROCKET_MIN_FLIGHT_MS = 1500; // 즉시 폭발 방지 하한
 const ROCKET_MAX_FLIGHT_MS = 30000; // 라운드 길이 상한(30초)
-const ROCKET_CRASH_LAMBDA = 1 / 8000; // 폭발 시점 지수분포 파라미터(중앙값 약 5.5초, MAX로 clamp)
+// 폭발 시점 분포 — "5~15초 구간에 50%, 양쪽(1.5~5초/15~30초)에 각 25%"를 정확히 맞추기
+// 위해 단일 지수분포 대신 3구간 가중 샘플링을 쓴다(구간 내부는 균등분포).
+const ROCKET_CRASH_MID_START_MS = 5000;
+const ROCKET_CRASH_MID_END_MS = 15000;
+const ROCKET_CRASH_MID_WEIGHT = 0.5; // 나머지 50%는 양쪽 구간에 25%씩 균등 배분
 const ROCKET_ASCENT_LINEAR = 8; // height(t) = a·t + b·t² (t=초, a=초반 속도)
 const ROCKET_ASCENT_QUADRATIC = 6; // b — 갈수록 가속
 
@@ -46,7 +50,9 @@ module.exports = {
   ROCKET_BOT_COUNT_MAX,
   ROCKET_MIN_FLIGHT_MS,
   ROCKET_MAX_FLIGHT_MS,
-  ROCKET_CRASH_LAMBDA,
+  ROCKET_CRASH_MID_START_MS,
+  ROCKET_CRASH_MID_END_MS,
+  ROCKET_CRASH_MID_WEIGHT,
   ROCKET_ASCENT_LINEAR,
   ROCKET_ASCENT_QUADRATIC,
 };
