@@ -240,7 +240,13 @@ async function checkRoomProgress(roomId) {
   const botReveals = {};
   Object.keys(secret.botEscapePlans || {}).forEach((botUid) => {
     const escapeMs = secret.botEscapePlans[botUid];
-    if (escapeMs <= elapsedMs && !escapes[botUid] && room.participants[botUid]) {
+    // 봇의 예정 탈출 시각이 실제 폭발 시각(secret.crashElapsedMs)보다 늦으면 그 봇은
+    // 로켓이 터지기 전에 탈출하지 못한 것이다 — 탈출 기록을 남기면 안 된다. 이 체크가
+    // 없으면 "폭발 후 시각에 탈출한 걸로 기록된 봇"이 승자 판정에서 실제로 폭발 전에
+    // 탈출한 사람보다 더 늦게(더 높게) 잘못 집계돼 진짜 승자 대신 뽑히는 사고가 생긴다
+    // (실제 운영에서 발생 확인 — 사람이 6.4초에 탈출했는데 21.7초에 "탈출"한 걸로
+    // 기록된 봇이 승자로 뽑혀 판돈이 잘못 소멸될 뻔함).
+    if (escapeMs <= elapsedMs && escapeMs <= secret.crashElapsedMs && !escapes[botUid] && room.participants[botUid]) {
       botReveals[botUid] = { escapedAtMs: escapeMs, nickname: room.participants[botUid].nickname, isBot: true };
     }
   });
@@ -249,23 +255,31 @@ async function checkRoomProgress(roomId) {
     Object.assign(escapes, botReveals);
   }
 
-  if (elapsedMs < secret.crashElapsedMs) return Object.assign({}, room, { escapes });
-
-  // 정산이 안 되고 라운드가 계속 'flying'으로 남는 원인 추적용 — 실제로 그런 문제가
-  // 발생했을 때 서버 로그만으로 (elapsedMs, crashElapsedMs, launchedAt) 상태를 바로
-  // 확인할 수 있게 남겨둔다(재현이 어려운 문제라 사후 로그가 유일한 단서일 수 있음).
   console.log('[rocket] 폭발 시점 지남, 정산 시도', {
     roomId, elapsedMs, crashElapsedMs: secret.crashElapsedMs, launchedAt: room.launchedAt,
   });
 
-  // 폭발 시점이 지났다 — 정산 트리거. increment 카운터로 "정확히 1번만" 가드하면
-  // 카운터가 1을 넘는 순간 두 번 다시 1이 될 수 없어(여러 요청이 동시에 몰리면) 그
-  // 라운드가 영영 정산되지 못하는 문제가 있다(로컬 fakedb 테스트로 실제 재현됨).
-  // 대신 status 필드 자체를 'flying'→'resolving'으로 트랜잭션 전이시켜, 이 전이에
-  // 실제로 성공한(committed && 결과가 'resolving') 호출 단 하나만 정산을 진행하고
-  // 나머지는 자연히 빠진다 — 카운터 방식과 달리 다음 폴링에서 항상 다시 시도 가능.
+  // 폭발 시점이 지났다 — 정산 트리거. status 필드를 'flying'→'resolving'으로
+  // transaction() 전이시켜, 이 전이에 실제로 성공한(committed && 결과가 'resolving')
+  // 호출 단 하나만 정산을 진행하고 나머지는 자연히 빠진다(increment 카운터 방식은
+  // "1번만 진행"을 보장하려다 되레 정산 담당자가 죽으면 그 라운드가 영영 정산 못 되는
+  // 문제가 있어서 기각 — 로컬 fakedb 테스트로 실제 재현됨).
+  //
+  // current가 null로 오는 경우에 대한 방어: 실제 운영에서 이 트랜잭션 콜백이 같은 경로에
+  // 실제로 'flying' 값이 있는데도 간헐적으로 current를 null로 잘못 인식하는 firebase-admin
+  // 버그가 확인됐다(functions/src/lib/wallet.js의 adjustBalance 주석과 동일 증상 —
+  // firebase database:get으로 직접 조회하면 status:"flying"이 뚜렷한데 콜백은 계속 null을
+  // 봐서 "이미 처리 중"으로 오판, 라운드가 영영 정산되지 못하는 실사고가 있었다). 이 콜백이
+  // 처음 이 경로를 읽는 게 아니라(위에서 이미 이 room을 통째로 get()해서 status가 정말
+  // 'flying'이었음을 확인한 뒤라서), current가 null이면 그 오탐으로 보고 이미 검증된
+  // room.status를 대신 신뢰한다. current가 null이 아닌 다른 값(예: 'resolving'/'resolved')
+  // 이면 그건 다른 호출이 이미 성공적으로 바꿔놓은 진짜 최신 정보이므로 그대로 존중해서
+  // 중단한다 — transaction()의 쓰기 충돌 시 자동 재시도가 실제 최신 값으로 콜백을 다시
+  // 부르는 표준 동작이라, 동시 호출 중 실제로 먼저 성공한 쪽이 있다면 이 콜백은 결국 그
+  // 정확한 값을 보게 된다(재시도 자체가 아니라 "처음 읽은 값이 틀렸다"는 것만 버그였음).
   const statusTx = await roomRef(roomId).child('status').transaction((current) => {
-    if (current !== 'flying') return; // undefined 반환 = 트랜잭션 중단(다른 호출이 이미 처리 중)
+    const effectiveCurrent = current === null ? 'flying' : current;
+    if (effectiveCurrent !== 'flying') return; // undefined 반환 = 트랜잭션 중단(다른 호출이 이미 처리 중/완료)
     return 'resolving';
   });
   console.log('[rocket] 정산 트랜잭션 결과', {
