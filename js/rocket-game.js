@@ -116,6 +116,23 @@
   var pollTimer = null;
   var animHandle = null;
   var particles = [];
+  var EXPLOSION_DURATION_MS = 900;
+  var EXPLOSION_COLORS = ['#ffb347', '#ff6b4a', '#00f2ea', '#a855f7', '#fff6c8'];
+  var explosionParticles = [];
+  var lastExplosionKey = null; // roomId:resolvedAt — 같은 라운드에서 재렌더링될 때 폭발 이펙트를 다시 재생하지 않기 위한 가드.
+
+  function spawnExplosionParticles() {
+    explosionParticles = [];
+    for (var i = 0; i < 18; i++) {
+      var angle = Math.random() * Math.PI * 2;
+      explosionParticles.push({
+        dx: Math.cos(angle), dy: Math.sin(angle),
+        speed: 40 + Math.random() * 80,
+        r: 2 + Math.random() * 3,
+        color: EXPLOSION_COLORS[i % EXPLOSION_COLORS.length],
+      });
+    }
+  }
 
   function stopPolling() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
   function startPolling(roomId) {
@@ -137,10 +154,20 @@
   // 외부 이미지/엔진 대신 직접 드로잉). screenY는 데이터상 고도(height)와 별개로
   // 화면 안에서 점근적으로만 상승하게 매핑해, 라운드가 길어져도 로켓이 항상 화면
   // 안에 보이면서 "끝없이 올라간다"는 느낌을 준다.
-  function drawFrame(elapsedMs, escaped) {
+  // explosionT: undefined면 평소 로켓 렌더링, 0~1이면 그 진행도만큼 폭발 이펙트를 그리고
+  // 로켓 몸체/불꽃은 그리지 않는다(로켓 파괴). 카메라 정지 — elapsedMs는 폭발 순간의
+  // 고도로 고정된 값이 호출부에서 넘어오므로 이 함수는 그 자리에서만 그린다(더 안 올라감).
+  function drawFrame(elapsedMs, escaped, explosionT) {
     var ctx = canvas.getContext('2d');
     var w = canvas.width, h = canvas.height;
     ctx.clearRect(0, 0, w, h);
+
+    ctx.save();
+    if (explosionT != null && explosionT < 0.25) {
+      // 폭발 초반 짧게 화면 전체가 흔들리는 충격 연출.
+      var shakeMag = (0.25 - explosionT) * 40;
+      ctx.translate((Math.random() - 0.5) * shakeMag, (Math.random() - 0.5) * shakeMag);
+    }
 
     var sky = ctx.createLinearGradient(0, 0, 0, h);
     sky.addColorStop(0, '#020505');
@@ -165,6 +192,12 @@
     var screenRise = maxScreenRise * (1 - Math.exp(-dataHeight / 420));
     var rocketX = w / 2;
     var rocketY = groundY - screenRise;
+
+    if (explosionT != null) {
+      drawExplosion(ctx, rocketX, rocketY, Math.min(1, explosionT));
+      ctx.restore();
+      return;
+    }
 
     if (!escaped) {
       var flicker = 0.75 + 0.25 * Math.sin(elapsedMs / 60);
@@ -216,12 +249,69 @@
     ctx.fillStyle = 'rgba(168,85,247,0.9)';
     ctx.beginPath(); ctx.arc(0, -10, 5, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
+    ctx.restore();
+  }
+
+  // 로켓 파괴 폭발 이펙트 — 화면 플래시 + 충격파 링 + 코어 파이어볼 + 사방으로 튀는 잔해
+  // 파티클. t(0~1)가 1에 가까워질수록 옅어지다가 1을 넘기면(runExplosionLoop가 clamp해서
+  // 넘겨줌) 잔해도 다 사그라든 정지 화면만 남는다(카메라 정지 상태 유지).
+  function drawExplosion(ctx, x, y, t) {
+    var flashAlpha = Math.max(0, 1 - t * 4);
+    if (flashAlpha > 0) {
+      ctx.fillStyle = 'rgba(255,240,200,' + (flashAlpha * 0.35).toFixed(3) + ')';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    var ringRadius = 10 + t * 90;
+    var ringAlpha = Math.max(0, 1 - t);
+    if (ringAlpha > 0) {
+      ctx.strokeStyle = 'rgba(255,179,71,' + ringAlpha.toFixed(3) + ')';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(x, y, ringRadius, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    var coreRadius = Math.max(0, 26 * (1 - t * 0.8));
+    if (coreRadius > 0) {
+      var coreGrad = ctx.createRadialGradient(x, y, 0, x, y, coreRadius);
+      coreGrad.addColorStop(0, 'rgba(255,246,200,' + Math.max(0, 1 - t * 1.2).toFixed(3) + ')');
+      coreGrad.addColorStop(0.5, 'rgba(255,140,60,' + Math.max(0, 0.9 - t).toFixed(3) + ')');
+      coreGrad.addColorStop(1, 'rgba(226,85,79,0)');
+      ctx.fillStyle = coreGrad;
+      ctx.beginPath(); ctx.arc(x, y, coreRadius, 0, Math.PI * 2); ctx.fill();
+    }
+
+    var debrisAlpha = Math.max(0, 1 - t);
+    if (debrisAlpha > 0) {
+      ctx.globalAlpha = debrisAlpha;
+      explosionParticles.forEach(function (p) {
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(x + p.dx * t * p.speed, y + p.dy * t * p.speed + t * t * 40, p.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+    }
   }
 
   function runCanvasLoop(getElapsedMs, isEscaped) {
     resizeCanvas();
     function frame() {
       drawFrame(getElapsedMs(), isEscaped());
+      animHandle = requestAnimationFrame(frame);
+    }
+    frame();
+  }
+
+  // 폭발 순간의 고도(frozenElapsedMs)에 카메라를 고정한 채로, 실제 시각 기준
+  // animStartAt으로부터 흐른 시간만큼만 폭발 애니메이션 진행도를 계산해 그린다
+  // (비행 elapsedMs는 더 이상 흐르지 않음 — 카메라 정지).
+  function runExplosionLoop(frozenElapsedMs, animStartAt) {
+    resizeCanvas();
+    function frame() {
+      var t = (Date.now() - animStartAt) / EXPLOSION_DURATION_MS;
+      drawFrame(frozenElapsedMs, true, Math.max(0, t));
       animHandle = requestAnimationFrame(frame);
     }
     frame();
@@ -245,6 +335,7 @@
     stopPolling();
     stopCanvasLoop();
     particles = [];
+    lastExplosionKey = null;
     if (unsubscribeRoom) { unsubscribeRoom(); unsubscribeRoom = null; }
     if (stageEl.__rocketTapHandler) {
       stageEl.removeEventListener('click', stageEl.__rocketTapHandler);
@@ -360,10 +451,24 @@
       return;
     }
 
-    // resolved
-    heightReadoutEl.textContent = '라운드 종료';
+    // resolved — 로켓이 폭발한 순간. 실제 폭발 시점(crashElapsedMs)은 서버가 끝까지 비밀로
+    // 감추는 값이라(roomsSecrets, .read:false) 클라이언트가 정확히는 모르지만, 공개 필드인
+    // launchedAt/resolvedAt 차이로 근사한 시점을 구해 그 고도에 카메라를 고정한다 — 폴링
+    // 주기(1.5초)만큼 오차가 있을 수 있지만 연출용 위치라 문제없다.
+    heightReadoutEl.textContent = '💥 폭발!';
     var res = room.resolution || {};
-    runCanvasLoop(function () { return MAX_FLIGHT_MS; }, function () { return true; });
+    var crashElapsedEstimate = Math.min(MAX_FLIGHT_MS, Math.max(0,
+      (res.resolvedAt && room.launchedAt) ? (res.resolvedAt - room.launchedAt) : MAX_FLIGHT_MS));
+    var explosionKey = roomId + ':' + (res.resolvedAt || 0);
+    if (lastExplosionKey !== explosionKey) {
+      lastExplosionKey = explosionKey;
+      spawnExplosionParticles();
+      runExplosionLoop(crashElapsedEstimate, Date.now());
+    } else {
+      // 이미 재생한 라운드(재렌더링) — 애니메이션을 다시 재생하지 않고 다 사그라든
+      // 정지 화면만 유지한다.
+      runExplosionLoop(crashElapsedEstimate, Date.now() - EXPLOSION_DURATION_MS - 1);
+    }
     resultBannerEl.style.display = '';
     if (res.winnerUid && !res.isBot) {
       resultBannerEl.textContent = '👑 ' + res.winnerNickname + '님이 ' + Number(res.amount).toLocaleString('ko-KR') + '원을 획득했습니다!';
