@@ -345,8 +345,11 @@
     }
   }
 
-  function attachEscapeHandler(roomId) {
+  // onTap: 서버 응답을 기다리지 않고 탭한 그 순간 바로 호출된다(체감 지연 없는 즉시 반응용).
+  // 실제 탈출 유효성 판정은 항상 서버(escapeRocket)가 하고, 여기서는 화면만 먼저 반응한다.
+  function attachEscapeHandler(roomId, onTap) {
     var handler = function () {
+      if (onTap) onTap();
       fb.httpsCallable('escapeRocket')({ roomId: roomId }).catch(function (e) {
         statusMsgEl.textContent = e.message || '탈출에 실패했어요.';
       });
@@ -431,7 +434,16 @@
       loopHeight();
 
       if (me && !escaped) {
-        attachEscapeHandler(roomId);
+        attachEscapeHandler(roomId, function () {
+          // 캔버스 루프가 매 프레임 이 escaped 변수를 다시 읽으므로, 이 한 줄만으로 다음
+          // 프레임부터 곧장 '탈출' 상태(불꽃 꺼짐)로 그려진다 — 서버가 나중에 "이미
+          // 폭발했습니다"로 거절하더라도, 그 경우 바로 뒤따라올 resolving/resolved 렌더가
+          // 이 상태를 실제 결과로 덮어써서 자연히 정정된다.
+          escaped = true;
+          tapHintEl.style.display = 'none';
+          waitingInfoEl.style.display = '';
+          waitingInfoEl.textContent = '탈출했어요! 결과를 기다리는 중...';
+        });
         tapHintEl.style.display = '';
       } else if (!me) {
         var reserved = room.spectators && room.spectators[uid] && room.spectators[uid].wantsNextRound;
