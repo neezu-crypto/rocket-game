@@ -169,6 +169,40 @@
   </div>
 </div>
 
+<div class="profile-backdrop" id="profile-edit-backdrop">
+  <div class="profile-modal">
+    <div class="terminal-header">
+      <span class="terminal-title">MY_PROFILE</span>
+      <div class="terminal-dots">
+        <button class="profile-modal-close" id="profile-edit-close" type="button" aria-label="닫기">✕</button>
+      </div>
+    </div>
+    <h3 class="profile-modal-title">프로필</h3>
+    <div class="profile-preview-row">
+      <div class="profile-preview-ring">
+        <div class="profile-preview-inner">
+          <img id="profile-preview-img" alt="프로필 이미지">
+          <span class="profile-preview-placeholder" id="profile-preview-placeholder">이미지</span>
+        </div>
+      </div>
+      <p class="profile-preview-caption">SOOP 아이디를 입력하면<br>프로필 이미지가 자동 설정돼요</p>
+    </div>
+    <div class="propose-field">
+      <input type="text" id="profile-nickname" maxlength="12" placeholder=" ">
+      <label for="profile-nickname" data-text="닉네임(선택)">닉네임(선택)</label>
+    </div>
+    <div class="propose-field">
+      <input type="text" id="profile-soopid" maxlength="20" pattern="[a-z0-9]{2,20}" autocomplete="off" placeholder=" ">
+      <label for="profile-soopid" data-text="SOOP 아이디(선택)">SOOP 아이디(선택)</label>
+    </div>
+    <p class="profile-error" id="profile-error"></p>
+    <button class="glitch-btn" id="profile-save-btn" type="button" data-text="저장">
+      <span class="btn-text">저장</span>
+    </button>
+    <p class="profile-status" id="profile-status"></p>
+  </div>
+</div>
+
 <script defer src="https://developers.kakao.com/sdk/js/kakao.js"></script>
 <script type="module" src="js/firebase-init.js"></script>
 <script type="module" src="js/devbar-links.js"></script>
@@ -176,21 +210,8 @@
 <script defer src="js/login-modal.js"></script>
 <script defer src="js/kakao-login.js"></script>
 <script defer src="js/streamer-verify.js"></script>
+<script defer src="js/profile-modal.js"></script>
 <script defer src="js/wallet.js"></script>
 <script defer src="js/rocket-game.js"></script>
-<script>
-  document.getElementById('open-login-btn').addEventListener('click', function () {
-    if (window.rgTrusted) return;
-    window.rgOpenLoginModal && window.rgOpenLoginModal();
-  });
-  document.addEventListener('rg-auth-changed', function (e) {
-    var btn = document.getElementById('open-login-btn');
-    if (e.detail.realUser) {
-      btn.textContent = (e.detail.realUser.displayName || '내 계정');
-    } else {
-      btn.textContent = '로그인';
-    }
-  });
-</script>
 </body>
 </html>

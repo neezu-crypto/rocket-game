@@ -188,6 +188,23 @@ button{ font-family: inherit; cursor: pointer; }
 .btn-verify-cta:hover{ border-color: var(--gold); box-shadow: 0 0 16px rgba(0,242,234,0.25); }
 .login-modal-hint{ font-size:11px; color:var(--muted-2); text-align:center; margin: 6px 0 0; }
 
+/* ---------- 프로필 모달(닉네임·SOOP 아이디, 둘 다 선택 입력) ---------- */
+.profile-preview-row{ display:flex; align-items:center; gap:14px; margin-bottom:18px; }
+.profile-preview-ring{
+  width:64px; height:64px; border-radius:2px; padding:2px; flex-shrink:0;
+  background: linear-gradient(135deg, var(--gold), var(--mint));
+}
+.profile-preview-inner{
+  width:100%; height:100%; border-radius:2px; background:var(--panel-raised);
+  display:flex; align-items:center; justify-content:center; overflow:hidden;
+}
+.profile-preview-inner img{ display:none; width:100%; height:100%; object-fit:cover; }
+.profile-preview-placeholder{ font-family:var(--font-display); font-size:11px; color:var(--muted); }
+.profile-preview-caption{ font-size:12px; color:var(--muted); line-height:1.5; margin:0; }
+.profile-error, .profile-status{ font-size:12px; margin:10px 0 0; display:none; }
+.profile-error.show{ display:block; color: var(--coral); }
+.profile-status.show{ display:block; color: var(--gold-text); }
+
 /* ---------- 방 생성 모달(인증 신청 등도 공용) ---------- */
 .propose-backdrop{
   position: fixed; inset:0; z-index: 500;

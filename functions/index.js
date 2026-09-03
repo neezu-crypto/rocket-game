@@ -4,4 +4,5 @@ initializeApp();
 module.exports = {
   ...require('./src/rocket'),
   ...require('./src/whoami'),
+  ...require('./src/profile'),
 };

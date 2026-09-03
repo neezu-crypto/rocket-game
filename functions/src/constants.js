@@ -2,6 +2,12 @@
 // 서버에서부터 차단(StreamBet-Market과 동일한 정규식).
 const NICKNAME_FORBIDDEN_RE = /[<>\x00-\x1F\x7F]/;
 
+// 프로필(방과 무관한 계정 단위 닉네임/SOOP 아이디) — 둘 다 선택 입력. SOOP_ID_RE는
+// StreamBet-Market과 동일 규칙(영문 소문자/숫자 2~20자)이라야 avatarUrlFor 공식이 실제
+// SOOP 프로필 이미지 경로와 맞는다.
+const PROFILE_NICKNAME_MAX_LENGTH = 12;
+const SOOP_ID_RE = /^[a-z0-9]{2,20}$/;
+
 // 관리자 판별 이메일 폴백(자매 저장소들과 동일 — adminCenter/adminUids에 uid가
 // 아직 등록 안 됐을 때만 쓰인다).
 const ADMIN_EMAIL = 'skftodwocks2@gmail.com';
@@ -27,6 +33,8 @@ const ROCKET_ASCENT_QUADRATIC = 6; // b — 갈수록 가속
 
 module.exports = {
   NICKNAME_FORBIDDEN_RE,
+  PROFILE_NICKNAME_MAX_LENGTH,
+  SOOP_ID_RE,
   ADMIN_EMAIL,
   AUDIT_LOG_CAP,
   ROCKET_ENTRY_STEP,
