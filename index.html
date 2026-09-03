@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>로켓 게임</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">🚀</span>
+      <span class="brand-name">로켓 <em>게임</em></span>
+    </div>
+    <div class="wallet">
+      <div class="wallet-balance">
+        <span class="wallet-label">보유 재화</span>
+        <span class="wallet-amount num" id="wallet-amount">0<small>원</small></span>
+      </div>
+      <button class="avatar avatar-login" id="open-login-btn" type="button" title="로그인">로그인</button>
+    </div>
+  </header>
+
+  <div id="rocket-view">
+    <div class="rocket-lobby" id="rocket-lobby">
+      <div class="rocket-lobby-head">
+        <h1>🚀 로켓 게임</h1>
+        <p class="pitch" style="margin:0;">함께 로켓에 탑승하고, 가장 마지막에 탈출한 사람이 판돈을 전부 가져갑니다.</p>
+        <button class="rocket-cta-btn" id="open-rocket-create-modal" type="button">방 만들기</button>
+      </div>
+      <div class="rocket-room-list" id="rocket-room-list">
+        <p class="empty-msg">방을 불러오는 중...</p>
+      </div>
+    </div>
+
+    <div class="rocket-room-screen" id="rocket-room-screen" style="display:none;">
+      <div class="rocket-room-head">
+        <button class="text-link" id="rocket-back-to-lobby" type="button">← 로비로</button>
+        <span class="rocket-room-title" id="rocket-room-title"></span>
+        <button class="btn-exchange" id="rocket-close-room-btn" type="button" style="display:none;">방 닫기</button>
+      </div>
+
+      <div class="rocket-stage" id="rocket-stage">
+        <canvas id="rocket-canvas"></canvas>
+        <div class="rocket-height-readout" id="rocket-height-readout">0m</div>
+        <div class="rocket-pot-readout" id="rocket-pot-readout"></div>
+        <div class="rocket-escape-log" id="rocket-escape-log"></div>
+        <div class="rocket-result-banner" id="rocket-result-banner" style="display:none;"></div>
+        <div class="rocket-tap-hint" id="rocket-tap-hint" style="display:none;">화면을 탭하면 탈출!</div>
+      </div>
+
+      <div class="rocket-control-panel" id="rocket-control-panel">
+        <div class="rocket-boarding-form" id="rocket-boarding-form" style="display:none;">
+          <div class="propose-field">
+            <label for="rocket-join-nickname">닉네임(한글 최대 6자)</label>
+            <input type="text" id="rocket-join-nickname" maxlength="6">
+          </div>
+          <button class="rocket-cta-btn" id="rocket-join-submit-btn" type="button">탑승하기</button>
+        </div>
+        <div class="rocket-waiting-info" id="rocket-waiting-info" style="display:none;"></div>
+        <button class="rocket-cta-btn" id="rocket-launch-btn" type="button" style="display:none;">🚀 발사!</button>
+        <button class="btn-exchange" id="rocket-spectate-reserve-btn" type="button" style="display:none;">다음 라운드 참가 예약</button>
+        <button class="rocket-cta-btn" id="rocket-restart-btn" type="button" style="display:none;">다시 발사 준비</button>
+      </div>
+      <p class="propose-modal-sub" id="rocket-room-status-msg" style="margin:10px 2px 0;"></p>
+    </div>
+  </div>
+</div>
+
+<div class="propose-backdrop" id="rocket-create-backdrop">
+  <div class="propose-modal">
+    <button class="propose-modal-close" id="rocket-create-modal-close" type="button" aria-label="닫기">✕</button>
+    <p class="propose-modal-title">🚀 로켓 게임 방 만들기</p>
+    <p class="propose-modal-sub">호스트도 동등한 참가자로 탑승합니다. 판돈은 즉시 차감돼요.</p>
+    <div class="propose-field">
+      <label for="rocket-create-nickname">닉네임(한글 최대 6자)</label>
+      <input type="text" id="rocket-create-nickname" maxlength="6">
+    </div>
+    <div class="propose-field">
+      <label for="rocket-create-entry-fee">판돈(1만원 단위, 1인당)</label>
+      <input type="number" id="rocket-create-entry-fee" min="10000" step="10000" value="10000">
+    </div>
+    <button class="propose-submit-btn" id="rocket-create-submit-btn" type="button">방 만들고 탑승하기</button>
+    <p class="propose-modal-sub" id="rocket-create-status"></p>
+  </div>
+</div>
+
+<div class="profile-backdrop" id="login-backdrop">
+  <div class="profile-modal">
+    <button class="profile-modal-close" id="login-modal-close" type="button" aria-label="닫기">✕</button>
+    <h3 class="profile-modal-title">로그인</h3>
+    <p class="login-modal-sub">로그인하면 방을 만들거나 참가할 수 있어요.</p>
+    <button class="btn-login-option btn-google" id="login-google-btn" type="button">
+      <span class="login-option-icon">G</span> Google로 시작하기
+    </button>
+  </div>
+</div>
+
+<script type="module" src="js/firebase-init.js"></script>
+<script defer src="js/login-modal.js"></script>
+<script defer src="js/wallet.js"></script>
+<script defer src="js/rocket-game.js"></script>
+<script>
+  document.getElementById('open-login-btn').addEventListener('click', function () {
+    if (window.rgRealUser) return;
+    window.rgOpenLoginModal && window.rgOpenLoginModal();
+  });
+  document.addEventListener('rg-auth-changed', function (e) {
+    var btn = document.getElementById('open-login-btn');
+    if (e.detail.realUser) {
+      btn.textContent = (e.detail.realUser.displayName || '내 계정');
+    } else {
+      btn.textContent = '로그인';
+    }
+  });
+</script>
+</body>
+</html>
