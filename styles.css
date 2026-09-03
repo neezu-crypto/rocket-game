@@ -291,7 +291,7 @@ button{ font-family: inherit; cursor: pointer; }
 .rocket-create-inline{
   position:relative; display:flex; flex-direction:column;
   background:var(--panel); border:1px solid var(--gold-line); border-radius:2px;
-  padding:20px; margin-bottom:20px; max-width:380px; box-shadow: 0 0 24px rgba(0,242,234,0.06);
+  padding:20px; margin:0 auto 20px; max-width:380px; box-shadow: 0 0 24px rgba(0,242,234,0.06);
 }
 .rocket-create-inline .glitch-btn{ margin-top:6px; }
 .rocket-room-list{ display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; }

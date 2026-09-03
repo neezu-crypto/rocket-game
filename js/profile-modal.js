@@ -46,6 +46,7 @@
       openBtn.classList.add('avatar-login');
       openBtn.innerHTML = '';
       openBtn.textContent = '로그인';
+      document.dispatchEvent(new CustomEvent('rg-profile-changed', { detail: null }));
       return;
     }
     var fb = window.rgFirebase;
@@ -61,6 +62,8 @@
       } else {
         applyButtonState((window.rgLoginMethodLabel && window.rgLoginMethodLabel()) || '로그인 완료', '');
       }
+      // 방 생성 폼의 기본 닉네임 채움(js/rocket-game.js)이 이 프로필 닉네임을 그대로 쓴다.
+      document.dispatchEvent(new CustomEvent('rg-profile-changed', { detail: currentProfile }));
     });
   });
 

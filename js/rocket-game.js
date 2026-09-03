@@ -85,7 +85,12 @@
   });
 
   // ---------- 방 생성(로비에 바로 노출되는 인라인 폼 — 모달 없음) ----------
-  createNicknameInput.value = recalledNickname();
+  // 기본 닉네임은 프로필(js/profile-modal.js)에 저장해둔 닉네임을 그대로 쓰고, 프로필
+  // 닉네임을 아직 저장한 적 없으면 빈칸으로 둔다(로그인 전에는 rg-profile-changed 자체가
+  // 안 뜨므로 자연히 빈칸 상태 그대로 유지됨).
+  document.addEventListener('rg-profile-changed', function (e) {
+    createNicknameInput.value = (e.detail && e.detail.nickname) || '';
+  });
 
   createSubmitBtn.addEventListener('click', function () {
     if (!window.rgTrusted) { window.rgOpenLoginModal && window.rgOpenLoginModal(); return; }
