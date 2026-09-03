@@ -251,6 +251,13 @@ async function checkRoomProgress(roomId) {
 
   if (elapsedMs < secret.crashElapsedMs) return Object.assign({}, room, { escapes });
 
+  // 정산이 안 되고 라운드가 계속 'flying'으로 남는 원인 추적용 — 실제로 그런 문제가
+  // 발생했을 때 서버 로그만으로 (elapsedMs, crashElapsedMs, launchedAt) 상태를 바로
+  // 확인할 수 있게 남겨둔다(재현이 어려운 문제라 사후 로그가 유일한 단서일 수 있음).
+  console.log('[rocket] 폭발 시점 지남, 정산 시도', {
+    roomId, elapsedMs, crashElapsedMs: secret.crashElapsedMs, launchedAt: room.launchedAt,
+  });
+
   // 폭발 시점이 지났다 — 정산 트리거. increment 카운터로 "정확히 1번만" 가드하면
   // 카운터가 1을 넘는 순간 두 번 다시 1이 될 수 없어(여러 요청이 동시에 몰리면) 그
   // 라운드가 영영 정산되지 못하는 문제가 있다(로컬 fakedb 테스트로 실제 재현됨).
@@ -260,6 +267,9 @@ async function checkRoomProgress(roomId) {
   const statusTx = await roomRef(roomId).child('status').transaction((current) => {
     if (current !== 'flying') return; // undefined 반환 = 트랜잭션 중단(다른 호출이 이미 처리 중)
     return 'resolving';
+  });
+  console.log('[rocket] 정산 트랜잭션 결과', {
+    roomId, committed: statusTx.committed, resultStatus: statusTx.snapshot.val(),
   });
   if (!statusTx.committed || statusTx.snapshot.val() !== 'resolving') {
     return Object.assign({}, room, { escapes }); // 이미 다른 호출이 정산 처리 중/완료

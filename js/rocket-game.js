@@ -296,10 +296,18 @@
     }
   }
 
-  function runCanvasLoop(getElapsedMs, isEscaped) {
+  // onFrame(elapsedMs): 매 프레임 그리기와 같은 타이밍에 호출(높이 표시 등). animHandle을
+  // 통해 stopCanvasLoop()로 항상 취소되므로, 별도의 독립 requestAnimationFrame 체인을
+  // 만들지 않는다(예전엔 높이 갱신용 루프를 따로 돌렸는데, 그 루프는 취소 로직이 없어서
+  // 방이 재렌더링될 때마다 새 루프가 추가로 쌓이고 하나도 멈추지 않는 버그가 있었다 —
+  // 라운드가 끝난 뒤에도 계속 살아남은 옛 루프가 매 프레임 높이를 계속 갱신해서 폭발
+  // 연출/결과 표시와 뒤섞이는 원인이었다).
+  function runCanvasLoop(getElapsedMs, isEscaped, onFrame) {
     resizeCanvas();
     function frame() {
-      drawFrame(getElapsedMs(), isEscaped());
+      var elapsedMs = getElapsedMs();
+      drawFrame(elapsedMs, isEscaped());
+      if (onFrame) onFrame(elapsedMs);
       animHandle = requestAnimationFrame(frame);
     }
     frame();
@@ -428,14 +436,9 @@
       var launchedAt = room.launchedAt;
       startPolling(roomId);
       var escaped = !!(me && room.escapes && room.escapes[uid]);
-      runCanvasLoop(function () { return Date.now() - launchedAt; }, function () { return escaped; });
-      var loopHeight = function () {
-        if (!roomScreenEl || roomScreenEl.style.display === 'none') return;
-        var elapsed = Date.now() - launchedAt;
-        heightReadoutEl.textContent = Math.round(heightAtElapsed(elapsed)).toLocaleString('ko-KR') + 'm';
-        requestAnimationFrame(loopHeight);
-      };
-      loopHeight();
+      runCanvasLoop(function () { return Date.now() - launchedAt; }, function () { return escaped; }, function (elapsedMs) {
+        heightReadoutEl.textContent = Math.round(heightAtElapsed(elapsedMs)).toLocaleString('ko-KR') + 'm';
+      });
 
       // 탭 → "탈출하는 중"(즉시, 서버 응답 전) → 서버가 실제로 성공 처리하면 "탈출 성공!"으로
       // 바뀐다. 네트워크 지연 때문에 실제로는 폭발 이후(서버 수신 기준)로 판정돼 거절당할 수도
