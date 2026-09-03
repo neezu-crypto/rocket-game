@@ -277,6 +277,15 @@ button{ font-family: inherit; cursor: pointer; }
 }
 .rocket-create-inline .propose-field{ margin-bottom:0; min-width:160px; flex:1; }
 .rocket-create-inline .glitch-btn{ width:auto; white-space:nowrap; }
+
+/* 로그인 완료 배지 — 로그인/스트리머 인증 후에는 닉네임 재입력 대신 표시(방 전용 닉네임은
+   기억된 값 또는 계정 기반 기본값을 자동으로 씀). 자리 차지 방식은 .propose-field와 맞춘다. */
+.login-complete-badge{
+  display:flex; align-items:center; gap:6px; min-width:160px; flex:1;
+  font-family:var(--font-display); font-size:13px; color:var(--gold-text);
+  border-bottom:2px solid var(--gold-line); padding:0.7em 0; letter-spacing:0.02em;
+}
+.rocket-boarding-form .login-complete-badge{ min-width:0; max-width:200px; }
 .rocket-room-list{ display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; }
 .rocket-room-card{
   background:var(--panel); border:1px solid var(--hairline); border-radius:2px; padding:14px 16px;

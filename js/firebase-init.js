@@ -72,10 +72,31 @@ window.rgIsAdmin = false;
 // 세션이어도 인증만 통과하면 실계정과 동일하게 취급한다(functions/src/lib/auth.js의
 // isTrustedAccount와 짝을 이루는 클라이언트 쪽 판정).
 window.rgIsVerifiedStreamer = false;
+window.rgVerifiedStreamerNickname = null; // 인증 신청 때 제출한 방송 닉네임(streamerVerifications.nickname)
 window.rgTrusted = false;
 function updateTrusted() {
   window.rgTrusted = !!(window.rgRealUser || window.rgIsAdmin || window.rgIsVerifiedStreamer);
 }
+
+// 로그인 후에는 닉네임을 다시 입력받지 않고 "OO 로그인 완료" 배지로 대체하기 위한 판별—
+// 카카오는 signInWithCustomToken 기반이라 providerData에 'kakao.com'이 안 남으므로
+// (커스텀 토큰 로그인은 연동 제공자 메타데이터를 남기지 않음), 이 앱에서 실계정이 될 수 있는
+// 경로가 구글 연동/카카오 연동 둘뿐이라는 점을 이용해 "구글이 아니면 카카오"로 판별한다.
+function isGoogleLinkedUser(user) {
+  return !!(user && user.providerData && user.providerData.some((p) => p.providerId === 'google.com'));
+}
+window.rgLoginMethodLabel = function () {
+  if (window.rgRealUser) return isGoogleLinkedUser(window.rgRealUser) ? '구글 로그인 완료' : '카카오 로그인 완료';
+  if (window.rgIsVerifiedStreamer) return '스트리머 인증 완료';
+  return null;
+};
+window.rgDefaultTrustedNickname = function () {
+  if (window.rgIsVerifiedStreamer && window.rgVerifiedStreamerNickname) {
+    return window.rgVerifiedStreamerNickname.slice(0, 6);
+  }
+  if (window.rgRealUser) return isGoogleLinkedUser(window.rgRealUser) ? '구글유저' : '카카오유저';
+  return '';
+};
 window.rgSignInWithCustomToken = (token) => signInWithCustomToken(auth, token);
 
 // 구글 팝업 인증 직후처럼 "활성 탭이 아니다"로 오판되기 쉬운 순간엔 네이티브
@@ -125,9 +146,11 @@ async function checkVerifiedStreamer(uid) {
     const q = query(ref(db, 'streamerVerifications'), orderByChild('uid'), equalTo(uid), limitToFirst(1));
     const snap = await get(q);
     window.rgIsVerifiedStreamer = snap.exists();
+    window.rgVerifiedStreamerNickname = snap.exists() ? (Object.values(snap.val())[0].nickname || null) : null;
   } catch (e) {
     console.error('스트리머 인증 여부 확인 실패', e);
     window.rgIsVerifiedStreamer = false;
+    window.rgVerifiedStreamerNickname = null;
   }
 }
 

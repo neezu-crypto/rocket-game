@@ -35,13 +35,48 @@
   var restartBtn = document.getElementById('rocket-restart-btn');
   var statusMsgEl = document.getElementById('rocket-room-status-msg');
   var createNicknameInput = document.getElementById('rocket-create-nickname');
+  var createNicknameField = document.getElementById('rocket-create-nickname-field');
+  var createLoginBadge = document.getElementById('rocket-create-login-badge');
   var createEntryFeeInput = document.getElementById('rocket-create-entry-fee');
   var createSubmitBtn = document.getElementById('rocket-create-submit-btn');
   var createStatusEl = document.getElementById('rocket-create-status');
+  var joinNicknameField = document.getElementById('rocket-join-nickname-field');
+  var joinLoginBadge = document.getElementById('rocket-join-login-badge');
   if (!lobbyListEl || !roomScreenEl || !canvas) return;
 
   function rememberNickname(name) { try { localStorage.setItem(NICKNAME_STORAGE_KEY, name); } catch (e) {} }
   function recalledNickname() { try { return localStorage.getItem(NICKNAME_STORAGE_KEY) || ''; } catch (e) { return ''; } }
+
+  // 로그인/스트리머 인증이 끝나면 매번 닉네임을 다시 물어보는 대신 "OO 로그인 완료" 배지로
+  // 대체한다 — 방 닉네임 값은 예전에 기억해둔 값을 그대로 쓰거나(없으면 로그인 수단 기반
+  // 기본값을 골라 기억해둔다), 서버(functions/src/rocket.js validateNickname)는 여전히
+  // 그 값으로 방을 만든다(닉네임 필드 자체를 없애는 게 아니라 숨기고 자동 채움).
+  function trustedNicknameValue() {
+    var recalled = recalledNickname();
+    if (recalled) return recalled;
+    var fallback = (window.rgDefaultTrustedNickname && window.rgDefaultTrustedNickname()) || '';
+    if (fallback) rememberNickname(fallback);
+    return fallback;
+  }
+
+  function applyLoginBadgeState(fieldEl, badgeEl, inputEl) {
+    if (!fieldEl || !badgeEl || !inputEl) return;
+    if (window.rgTrusted) {
+      var label = (window.rgLoginMethodLabel && window.rgLoginMethodLabel()) || '로그인 완료';
+      badgeEl.textContent = '✅ ' + label;
+      badgeEl.style.display = '';
+      fieldEl.style.display = 'none';
+      if (!inputEl.value.trim()) inputEl.value = trustedNicknameValue();
+    } else {
+      badgeEl.style.display = 'none';
+      fieldEl.style.display = '';
+    }
+  }
+
+  document.addEventListener('rg-auth-changed', function () {
+    applyLoginBadgeState(createNicknameField, createLoginBadge, createNicknameInput);
+    applyLoginBadgeState(joinNicknameField, joinLoginBadge, joinNicknameInput);
+  });
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
   }
