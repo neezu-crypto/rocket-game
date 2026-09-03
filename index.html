@@ -112,13 +112,46 @@
     <button class="btn-login-option btn-google" id="login-google-btn" type="button">
       <span class="login-option-icon">G</span> Google로 시작하기
     </button>
+    <button class="btn-login-option btn-kakao" id="kakao-login-btn" type="button">
+      <span class="login-option-icon">K</span> 카카오로 시작하기
+    </button>
+    <button class="btn-login-option btn-verify-cta" id="login-verify-btn" type="button">
+      스트리머 인증 신청하기
+    </button>
+    <p class="login-modal-hint">스트리머 인증 신청은 로그인 없이도 가능해요.</p>
   </div>
 </div>
 
+<div class="propose-backdrop" id="verify-backdrop">
+  <div class="propose-modal">
+    <button class="propose-modal-close" id="verify-modal-close" type="button" aria-label="닫기">✕</button>
+    <p class="propose-modal-title">🎙️ 스트리머 인증</p>
+    <p class="propose-modal-sub">방송 닉네임과 SOOP 아이디를 입력해 신청하면 관리자에게 즉시 전달돼요. 인증되면 로그인 없이도 실계정처럼 방을 만들고 참가할 수 있어요.</p>
+    <div id="verify-form">
+      <div class="propose-field">
+        <label for="verify-nickname">방송 닉네임</label>
+        <input type="text" id="verify-nickname" maxlength="20" placeholder="예: 오목지면시그">
+      </div>
+      <div class="propose-field">
+        <label for="verify-soopid">SOOP 아이디</label>
+        <input type="text" id="verify-soopid" maxlength="20" placeholder="예: skftodwocks2">
+      </div>
+      <button class="propose-submit-btn" id="verify-submit-btn" type="button">신청하기</button>
+    </div>
+    <div id="verify-pending" style="display:none;">
+      <p class="propose-modal-sub" id="verify-pending-text"></p>
+      <button class="propose-submit-btn" id="verify-check-btn" type="button">🔄 승인됐는지 확인하기</button>
+    </div>
+  </div>
+</div>
+
+<script defer src="https://developers.kakao.com/sdk/js/kakao.js"></script>
 <script type="module" src="js/firebase-init.js"></script>
 <script type="module" src="js/devbar-links.js"></script>
 <script defer src="js/devbar.js"></script>
 <script defer src="js/login-modal.js"></script>
+<script defer src="js/kakao-login.js"></script>
+<script defer src="js/streamer-verify.js"></script>
 <script defer src="js/wallet.js"></script>
 <script defer src="js/rocket-game.js"></script>
 <script>

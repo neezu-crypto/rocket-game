@@ -139,6 +139,12 @@ button{ font-family: inherit; cursor: pointer; }
 .btn-google{ background:#fff; border:1px solid var(--hairline); color:#1f1f1f; }
 .btn-google:hover{ filter: brightness(0.96); }
 .btn-google .login-option-icon{ background:#4285F4; color:#fff; }
+.btn-kakao.btn-login-option{ background:#FEE500; border:1px solid #FEE500; color:#191919; }
+.btn-kakao.btn-login-option:hover{ filter: brightness(0.95); }
+.btn-kakao.btn-login-option .login-option-icon{ background:#191919; color:#FEE500; }
+.btn-verify-cta{ background:transparent; border:1px solid var(--gold-line); color: var(--gold-text); margin-bottom:0; }
+.btn-verify-cta:hover{ border-color: var(--gold); }
+.login-modal-hint{ font-size:11px; color:var(--muted-2); text-align:center; margin: 6px 0 0; }
 
 /* ---------- 방 생성 모달 ---------- */
 .propose-backdrop{

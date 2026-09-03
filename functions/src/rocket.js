@@ -1,6 +1,6 @@
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { getDatabase } = require('firebase-admin/database');
-const { requireAuth, requireRealAccount, assertNotBanned, isAdmin } = require('./lib/auth');
+const { requireAuth, requireTrustedAccount, assertNotBanned, isAdmin } = require('./lib/auth');
 const { ensureWallet, adjustBalance } = require('./lib/wallet');
 const { logAudit } = require('./lib/audit');
 const {
@@ -86,7 +86,7 @@ function buildBotsForRoom(roomId) {
 // 방 생성 — 호스트가 판돈을 걸고 자동 탑승, 방마다 고정 봇도 함께 탑승(봇은 실제 화폐를
 // 내지 않음 — 위 파일 상단 주석 참고).
 const createRocketRoom = onCall(async (request) => {
-  const uid = requireRealAccount(request);
+  const uid = await requireTrustedAccount(request);
   await assertNotBanned(uid);
   await ensureWallet(uid);
   const { nickname, entryFee } = request.data || {};
@@ -119,7 +119,7 @@ const createRocketRoom = onCall(async (request) => {
 
 // 참가 — waiting 상태일 때만.
 const joinRocketRoom = onCall(async (request) => {
-  const uid = requireRealAccount(request);
+  const uid = await requireTrustedAccount(request);
   await assertNotBanned(uid);
   await ensureWallet(uid);
   const { roomId, nickname } = request.data || {};
@@ -148,7 +148,7 @@ const joinRocketRoom = onCall(async (request) => {
 
 // 관전 중 "다음 라운드 참가 예약" — 과금 없음, 표시만 해두고 launchRocketRoom이 자동 처리.
 const spectateNextRound = onCall(async (request) => {
-  const uid = requireRealAccount(request);
+  const uid = await requireTrustedAccount(request);
   await assertNotBanned(uid);
   const { roomId, nickname, wantsNextRound } = request.data || {};
   if (!roomId) throw new HttpsError('invalid-argument', '방을 찾을 수 없습니다.');
@@ -339,7 +339,7 @@ const pollRocketRoom = onCall(async (request) => {
 
 // 재시작 — 호스트만, resolved 상태에서만. 호스트가 다시 탑승비를 내고 새 라운드를 연다.
 const restartRocketRoom = onCall(async (request) => {
-  const uid = requireRealAccount(request);
+  const uid = await requireTrustedAccount(request);
   await assertNotBanned(uid);
   await ensureWallet(uid);
   const { roomId } = request.data || {};
