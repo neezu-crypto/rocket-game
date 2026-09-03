@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>로켓 게임</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -47,15 +50,21 @@
         <p class="pitch" style="margin:0;">함께 로켓에 탑승하고, 가장 마지막에 탈출한 사람이 판돈을 전부 가져갑니다.</p>
       </div>
       <div class="rocket-create-inline">
-        <div class="propose-field">
-          <label for="rocket-create-nickname">닉네임(한글 최대 6자)</label>
-          <input type="text" id="rocket-create-nickname" maxlength="6">
+        <div class="terminal-header">
+          <span class="terminal-title">NEW_ROOM</span>
+          <div class="terminal-dots"><span></span><span></span><span></span></div>
         </div>
         <div class="propose-field">
-          <label for="rocket-create-entry-fee">판돈(1만원 단위, 1인당)</label>
-          <input type="number" id="rocket-create-entry-fee" min="10000" step="10000" value="10000">
+          <input type="text" id="rocket-create-nickname" maxlength="6" placeholder=" ">
+          <label for="rocket-create-nickname" data-text="닉네임(한글 최대 6자)">닉네임(한글 최대 6자)</label>
         </div>
-        <button class="rocket-cta-btn" id="rocket-create-submit-btn" type="button">방 만들고 탑승하기</button>
+        <div class="propose-field">
+          <input type="number" id="rocket-create-entry-fee" min="10000" step="10000" value="10000" placeholder=" ">
+          <label for="rocket-create-entry-fee" data-text="판돈(1만원 단위)">판돈(1만원 단위)</label>
+        </div>
+        <button class="glitch-btn" id="rocket-create-submit-btn" type="button" data-text="방 만들고 탑승하기">
+          <span class="btn-text">방 만들고 탑승하기</span>
+        </button>
       </div>
       <p class="propose-modal-sub" id="rocket-create-status"></p>
       <div class="rocket-room-list" id="rocket-room-list">
@@ -82,15 +91,21 @@
       <div class="rocket-control-panel" id="rocket-control-panel">
         <div class="rocket-boarding-form" id="rocket-boarding-form" style="display:none;">
           <div class="propose-field">
-            <label for="rocket-join-nickname">닉네임(한글 최대 6자)</label>
-            <input type="text" id="rocket-join-nickname" maxlength="6">
+            <input type="text" id="rocket-join-nickname" maxlength="6" placeholder=" ">
+            <label for="rocket-join-nickname" data-text="닉네임(한글 최대 6자)">닉네임(한글 최대 6자)</label>
           </div>
-          <button class="rocket-cta-btn" id="rocket-join-submit-btn" type="button">탑승하기</button>
+          <button class="glitch-btn" id="rocket-join-submit-btn" type="button" data-text="탑승하기">
+            <span class="btn-text">탑승하기</span>
+          </button>
         </div>
         <div class="rocket-waiting-info" id="rocket-waiting-info" style="display:none;"></div>
-        <button class="rocket-cta-btn" id="rocket-launch-btn" type="button" style="display:none;">🚀 발사!</button>
+        <button class="glitch-btn" id="rocket-launch-btn" type="button" style="display:none;" data-text="🚀 발사!">
+          <span class="btn-text">🚀 발사!</span>
+        </button>
         <button class="btn-exchange" id="rocket-spectate-reserve-btn" type="button" style="display:none;">다음 라운드 참가 예약</button>
-        <button class="rocket-cta-btn" id="rocket-restart-btn" type="button" style="display:none;">다시 발사 준비</button>
+        <button class="glitch-btn" id="rocket-restart-btn" type="button" style="display:none;" data-text="다시 발사 준비">
+          <span class="btn-text">다시 발사 준비</span>
+        </button>
       </div>
       <p class="propose-modal-sub" id="rocket-room-status-msg" style="margin:10px 2px 0;"></p>
     </div>
@@ -99,7 +114,12 @@
 
 <div class="profile-backdrop" id="login-backdrop">
   <div class="profile-modal">
-    <button class="profile-modal-close" id="login-modal-close" type="button" aria-label="닫기">✕</button>
+    <div class="terminal-header">
+      <span class="terminal-title">SECURE_LOGIN</span>
+      <div class="terminal-dots">
+        <button class="profile-modal-close" id="login-modal-close" type="button" aria-label="닫기">✕</button>
+      </div>
+    </div>
     <h3 class="profile-modal-title">로그인</h3>
     <p class="login-modal-sub">로그인하면 방을 만들거나 참가할 수 있어요.</p>
     <button class="btn-login-option btn-google" id="login-google-btn" type="button">
@@ -117,23 +137,32 @@
 
 <div class="propose-backdrop" id="verify-backdrop">
   <div class="propose-modal">
-    <button class="propose-modal-close" id="verify-modal-close" type="button" aria-label="닫기">✕</button>
+    <div class="terminal-header">
+      <span class="terminal-title">STREAMER_VERIFY</span>
+      <div class="terminal-dots">
+        <button class="propose-modal-close" id="verify-modal-close" type="button" aria-label="닫기">✕</button>
+      </div>
+    </div>
     <p class="propose-modal-title">🎙️ 스트리머 인증</p>
     <p class="propose-modal-sub">방송 닉네임과 SOOP 아이디를 입력해 신청하면 관리자에게 즉시 전달돼요. 인증되면 로그인 없이도 실계정처럼 방을 만들고 참가할 수 있어요.</p>
     <div id="verify-form">
       <div class="propose-field">
-        <label for="verify-nickname">방송 닉네임</label>
-        <input type="text" id="verify-nickname" maxlength="20" placeholder="예: 오목지면시그">
+        <input type="text" id="verify-nickname" maxlength="20" placeholder=" ">
+        <label for="verify-nickname" data-text="방송 닉네임">방송 닉네임</label>
       </div>
       <div class="propose-field">
-        <label for="verify-soopid">SOOP 아이디</label>
-        <input type="text" id="verify-soopid" maxlength="20" placeholder="예: skftodwocks2">
+        <input type="text" id="verify-soopid" maxlength="20" placeholder=" ">
+        <label for="verify-soopid" data-text="SOOP 아이디">SOOP 아이디</label>
       </div>
-      <button class="propose-submit-btn" id="verify-submit-btn" type="button">신청하기</button>
+      <button class="glitch-btn" id="verify-submit-btn" type="button" data-text="신청하기">
+        <span class="btn-text">신청하기</span>
+      </button>
     </div>
     <div id="verify-pending" style="display:none;">
       <p class="propose-modal-sub" id="verify-pending-text"></p>
-      <button class="propose-submit-btn" id="verify-check-btn" type="button">🔄 승인됐는지 확인하기</button>
+      <button class="glitch-btn" id="verify-check-btn" type="button" data-text="🔄 승인됐는지 확인하기">
+        <span class="btn-text">🔄 승인됐는지 확인하기</span>
+      </button>
     </div>
   </div>
 </div>
@@ -149,7 +178,7 @@
 <script defer src="js/rocket-game.js"></script>
 <script>
   document.getElementById('open-login-btn').addEventListener('click', function () {
-    if (window.rgRealUser) return;
+    if (window.rgTrusted) return;
     window.rgOpenLoginModal && window.rgOpenLoginModal();
   });
   document.addEventListener('rg-auth-changed', function (e) {

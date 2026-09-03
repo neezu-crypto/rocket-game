@@ -138,11 +138,11 @@
     ctx.clearRect(0, 0, w, h);
 
     var sky = ctx.createLinearGradient(0, 0, 0, h);
-    sky.addColorStop(0, '#0b1030');
-    sky.addColorStop(1, '#1b2550');
+    sky.addColorStop(0, '#020505');
+    sky.addColorStop(1, '#0a1c1c');
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, w, h);
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillStyle = 'rgba(0,242,234,0.55)';
     for (var i = 0; i < 40; i++) {
       var sx = (i * 97 + (elapsedMs * 0.01)) % w;
       var sy = (i * 53) % (h * 0.7);
@@ -150,8 +150,10 @@
     }
 
     var groundY = h - 24;
-    ctx.fillStyle = '#12331f';
+    ctx.fillStyle = '#081210';
     ctx.fillRect(0, groundY, w, h - groundY);
+    ctx.strokeStyle = 'rgba(0,242,234,0.3)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(w, groundY); ctx.stroke();
 
     var dataHeight = heightAtElapsed(elapsedMs);
     var maxScreenRise = h - 110;
@@ -202,11 +204,11 @@
     ctx.fill();
     ctx.strokeStyle = 'rgba(11,13,16,0.35)'; ctx.lineWidth = 1; ctx.stroke();
 
-    ctx.fillStyle = '#d9a441';
+    ctx.fillStyle = '#00f2ea';
     ctx.beginPath(); ctx.moveTo(-12, -2); ctx.lineTo(-22, 16); ctx.lineTo(-12, 12); ctx.closePath(); ctx.fill();
     ctx.beginPath(); ctx.moveTo(12, -2); ctx.lineTo(22, 16); ctx.lineTo(12, 12); ctx.closePath(); ctx.fill();
 
-    ctx.fillStyle = 'rgba(63,182,137,0.85)';
+    ctx.fillStyle = 'rgba(168,85,247,0.9)';
     ctx.beginPath(); ctx.arc(0, -10, 5, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
   }
