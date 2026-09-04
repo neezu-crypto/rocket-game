@@ -5,4 +5,5 @@ module.exports = {
   ...require('./src/rocket'),
   ...require('./src/whoami'),
   ...require('./src/profile'),
+  ...require('./src/admin'),
 };

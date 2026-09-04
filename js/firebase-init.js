@@ -181,6 +181,22 @@ async function checkVerifiedStreamer(uid) {
   }
 }
 
+// 접속자 분석(admin-center 10번, 2026-09-05 추가) — presence/rocketGame/{uid}에
+// 주기적으로 lastSeen을 기록한다(soop-stock-market/StreamBet-Market이 이미 검증한
+// 5분 주기 패턴 그대로 재사용, 경로만 이 게임 이름으로 네임스페이스). 익명 세션도
+// 포함해서 기록해야 실제 동접 규모를 반영한다.
+const PRESENCE_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+let presenceIntervalId = null;
+function refreshMyPresence() {
+  if (!window.rgUser) return;
+  set(ref(db, 'presence/rocketGame/' + window.rgUser.uid), { lastSeen: Date.now() }).catch(() => {});
+}
+function startPresenceRefreshLoop() {
+  if (presenceIntervalId) clearInterval(presenceIntervalId);
+  refreshMyPresence();
+  presenceIntervalId = setInterval(refreshMyPresence, PRESENCE_REFRESH_INTERVAL_MS);
+}
+
 // 페이지 접속 시(로딩 동안) 자동으로 익명 로그인 — auth != null 규칙을 만족시켜 로그인
 // 전에도 방 목록 등 공개 데이터를 읽을 수 있게 한다. 재화가 걸린 기능(방 생성·참가 등)은
 // requireTrustedAccount가 서버에서 막는다(functions/src/lib/auth.js).
@@ -196,6 +212,7 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
+  startPresenceRefreshLoop();
   await checkVerifiedStreamer(user.uid); // 익명 세션이어도 인증만 됐으면 확인해야 한다
   if (window.rgRealUser) {
     try {
