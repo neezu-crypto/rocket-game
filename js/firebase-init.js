@@ -146,6 +146,11 @@ function signIn() {
     window.rgCloseLoginModal && window.rgCloseLoginModal();
   }).catch(async (err) => {
     if (err && err.code === 'auth/credential-already-in-use') {
+      // 로그인 모달과 확인 모달의 z-index가 같아서(둘 다 500), 로그인 모달을 먼저
+      // 안 닫으면 DOM 순서상 나중에 오는 로그인 모달이 확인 모달을 가려버린다 —
+      // streamer-gallery에서 실제로 "로그인이 멈춘 것처럼 보이는" 것으로 재현됨
+      // (2026-09-05, 사용자 확인).
+      window.rgCloseLoginModal && window.rgCloseLoginModal();
       if (!(await confirmModal('🔗 이미 연동된 계정을 발견했어요!\n이 기기에서도 같은 계정으로 이어서 진행할까요?'))) return;
       try {
         await signInWithPopup(auth, googleProvider);
