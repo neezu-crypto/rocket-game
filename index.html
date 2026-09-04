@@ -112,6 +112,22 @@
   </div>
 </div>
 
+<!-- 범용 확인 모달(window.confirm 대체) — 팝업 로그인 직후처럼 브라우저가 "활성 탭이
+     아니다"로 오판하는 순간에 네이티브 confirm()을 부르면 크롬이 다이얼로그를 아예
+     띄우지도 않고 조용히 억제해버리는 문제가 있어(soop-stock-market·streamer-gallery에서
+     실제로 겪고 고친 문제), 그 대상이 아닌 이 커스텀 모달을 대신 쓴다. -->
+<div class="propose-backdrop" id="app-confirm-backdrop">
+  <div class="propose-modal" style="max-width:380px;text-align:center;">
+    <p class="propose-modal-sub" id="app-confirm-message" style="white-space:pre-line;margin:0 0 20px;"></p>
+    <div style="display:flex;gap:8px;">
+      <button class="text-link" id="app-confirm-no-btn" type="button" style="flex:1;border:1px solid var(--hairline);border-radius:2px;padding:10px;">취소</button>
+      <button class="glitch-btn" id="app-confirm-yes-btn" type="button" data-text="확인" style="flex:1;margin-top:0;">
+        <span class="btn-text">확인</span>
+      </button>
+    </div>
+  </div>
+</div>
+
 <div class="profile-backdrop" id="login-backdrop">
   <div class="profile-modal">
     <div class="terminal-header">

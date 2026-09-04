@@ -99,9 +99,36 @@ window.rgDefaultTrustedNickname = function () {
 };
 window.rgSignInWithCustomToken = (token) => signInWithCustomToken(auth, token);
 
-// 구글 팝업 인증 직후처럼 "활성 탭이 아니다"로 오판되기 쉬운 순간엔 네이티브
-// confirm()이 억제될 수 있지만, 그 정도로 자주 겪는 경로가 아니라(구글 계정이
-// 이미 다른 uid에 연동된 극히 드문 경우에만 탐) 일단 네이티브 confirm을 쓴다.
+// 구글 팝업이 닫힌 직후엔 COOP 정책 때문에 브라우저가 이 탭을 잠깐 "활성 탭이
+// 아니다"로 오판하고, 그 상태에서 네이티브 confirm()을 부르면 크롬이 다이얼로그
+// 자체를 띄우지도 않고 조용히 억제해버린다. soop-stock-market에서 이미 한 번 실제로
+// 겪고 고친 문제(2026-07-10, 커밋 e6db09d)이자, streamer-gallery에서도 실제
+// 재현된 문제(2026-09-04)— 그때 검증된 해법 그대로, 타이밍에 기대는 지연이 아니라
+// 이 문제 자체의 대상이 아닌 일반 HTML 커스텀 모달로 완전히 대체한다.
+// ⚠️ 이 앱들처럼 같은 Firebase Auth 사용자 풀을 공유하는 자매 사이트를 또 새로
+// 만들 때 이 패턴을 복사한다면, 네이티브 confirm()으로 절대 되돌리지 말 것 —
+// "드문 경로"가 아니라 새 사이트 첫 로그인마다 흔히 겪는 경로다.
+function confirmModal(message) {
+  return new Promise((resolve) => {
+    var backdrop = document.getElementById('app-confirm-backdrop');
+    var msgEl = document.getElementById('app-confirm-message');
+    var yesBtn = document.getElementById('app-confirm-yes-btn');
+    var noBtn = document.getElementById('app-confirm-no-btn');
+    if (!backdrop || !msgEl || !yesBtn || !noBtn) { resolve(false); return; }
+    msgEl.textContent = message;
+    backdrop.classList.add('open');
+    function cleanup(result) {
+      backdrop.classList.remove('open');
+      yesBtn.onclick = null;
+      noBtn.onclick = null;
+      resolve(result);
+    }
+    yesBtn.onclick = function () { cleanup(true); };
+    noBtn.onclick = function () { cleanup(false); };
+  });
+}
+window.rgConfirmModal = confirmModal; // 팝업 기반 로그인(카카오 등) 직후 confirm()에도 재사용
+
 async function completeAccountSwitch(customToken) {
   await signInWithCustomToken(auth, customToken);
   alert('✅ 이제 이 기기에서도 같은 계정을 이어서 쓸 수 있어요.');
@@ -119,7 +146,7 @@ function signIn() {
     window.rgCloseLoginModal && window.rgCloseLoginModal();
   }).catch(async (err) => {
     if (err && err.code === 'auth/credential-already-in-use') {
-      if (!confirm('🔗 이미 연동된 계정을 발견했어요!\n이 기기에서도 같은 계정으로 이어서 진행할까요?')) return;
+      if (!(await confirmModal('🔗 이미 연동된 계정을 발견했어요!\n이 기기에서도 같은 계정으로 이어서 진행할까요?'))) return;
       try {
         await signInWithPopup(auth, googleProvider);
         await linkGoogleAccountFn();

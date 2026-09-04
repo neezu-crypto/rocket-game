@@ -25,7 +25,10 @@
         try {
           var result = await window.rgLinkKakaoAccount(authObj.access_token);
           if (result.data.action === 'switch') {
-            if (!confirm('이미 연동된 카카오 계정이에요. 그 계정으로 이어서 플레이할까요?\n(이 기기에서 익명으로 쌓인 기록은 옮겨지지 않아요)')) return;
+            // 카카오 팝업 직후 곧바로 뜨는 confirm()도 firebase-init.js의 구글 로그인과
+            // 같은 이유(팝업 종료 직후 "활성 탭 아님" 오판으로 인한 억제)로 조용히
+            // 취소될 수 있어 동일한 커스텀 확인 모달을 재사용한다.
+            if (!(await window.rgConfirmModal('이미 연동된 카카오 계정이에요. 그 계정으로 이어서 플레이할까요?\n(이 기기에서 익명으로 쌓인 기록은 옮겨지지 않아요)'))) return;
             await window.rgCompleteAccountSwitch(result.data.customToken);
           } else if (result.data.action === 'linked') {
             alert('✅ 카카오 연동이 완료됐습니다.');
