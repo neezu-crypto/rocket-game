@@ -53,8 +53,14 @@
         closeModal();
         await window.rgCompleteAccountSwitch(customToken);
       } else if (action === 'already-verified') {
+        // 'switch'와 달리 이 경로는 uid가 그대로라 완전한 페이지 갱신이 필요 없어
+        // 보였지만, window.rgIsVerifiedStreamer/rgTrusted는 로그인 시점에 한 번만
+        // 계산돼서 여기서 다시 계산해주지 않으면 "인증 완료" 알림만 뜨고 실제로는
+        // 화면이 계속 게스트 취급되는 버그가 있었다(2026-09-05, streamer-gallery에서
+        // 사용자가 실제 재현). completeAccountSwitch와 동일하게 새로고침한다.
         closeModal();
         alert('✅ 이미 스트리머 인증이 완료된 계정이에요.');
+        window.location.reload();
       } else {
         showPending(nickname, isSwitch);
         if (!data.nickname) alert('아직 관리자 확인 전이에요. 잠시 후 다시 확인해주세요.');
