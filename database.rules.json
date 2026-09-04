@@ -656,6 +656,12 @@
           }
         }
       },
+      "userLikes": {
+        "$uid": {
+          ".read": "auth != null && auth.uid === $uid",
+          "$imageId": { ".write": false }
+        }
+      },
       "comments": {
         ".read": true,
         "$imageId": {
