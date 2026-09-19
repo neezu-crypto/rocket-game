@@ -74,6 +74,7 @@ window.rgIsAdmin = false;
 window.rgIsVerifiedStreamer = false;
 window.rgVerifiedStreamerNickname = null; // 인증 신청 때 제출한 방송 닉네임(streamerVerifications.nickname)
 window.rgTrusted = false;
+window.rgPublicId = null;
 function updateTrusted() {
   window.rgTrusted = !!(window.rgRealUser || window.rgIsAdmin || window.rgIsVerifiedStreamer);
 }
@@ -175,15 +176,22 @@ window.rgCompleteAccountSwitch = completeAccountSwitch;
 
 async function checkVerifiedStreamer(uid) {
   try {
-    const q = query(ref(db, 'streamerVerifications'), orderByChild('uid'), equalTo(uid), limitToFirst(1));
-    const snap = await get(q);
-    window.rgIsVerifiedStreamer = snap.exists();
-    window.rgVerifiedStreamerNickname = snap.exists() ? (Object.values(snap.val())[0].nickname || null) : null;
+    const snap = await get(ref(db, 'users/' + uid));
+    const user = snap.val() || {};
+    window.rgIsVerifiedStreamer = user.streamerVerified === true;
+    window.rgVerifiedStreamerNickname = window.rgIsVerifiedStreamer && user.streamerProfile
+      ? (user.streamerProfile.nickname || null) : null;
   } catch (e) {
     console.error('스트리머 인증 여부 확인 실패', e);
     window.rgIsVerifiedStreamer = false;
     window.rgVerifiedStreamerNickname = null;
   }
+}
+async function loadRocketPublicId() {
+  try {
+    const result = await httpsCallable(functions, 'getRocketPublicId')();
+    window.rgPublicId = result.data && result.data.publicId || null;
+  } catch (e) { window.rgPublicId = null; }
 }
 
 // 접속자 분석(admin-center 10번, 2026-09-05 추가) — presence/rocketGame/{uid}에
@@ -218,6 +226,7 @@ onAuthStateChanged(auth, async (user) => {
   }
 
   startPresenceRefreshLoop();
+  await loadRocketPublicId();
   await checkVerifiedStreamer(user.uid); // 익명 세션이어도 인증만 됐으면 확인해야 한다
   if (window.rgRealUser) {
     try {

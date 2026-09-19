@@ -80,7 +80,7 @@
     });
   }
 
-  fb.onValue(fb.ref(window.rgDb, 'rocketGame/rooms'), function (snap) {
+  fb.onValue(fb.ref(window.rgDb, 'rocketGame/roomsPublic'), function (snap) {
     renderRoomList(snap.val());
   });
 
@@ -328,7 +328,7 @@
 
   function renderEscapeLog(room) {
     var escapes = room.escapes || {};
-    var winnerUid = room.resolution && room.resolution.winnerUid;
+    var winnerUid = room.resolution && room.resolution.winnerPublicId;
     var rows = Object.keys(escapes).map(function (uid) { return Object.assign({ uid: uid }, escapes[uid]); })
       .sort(function (a, b) { return b.escapedAtMs - a.escapedAtMs; });
     if (!rows.length) { escapeLogEl.innerHTML = '<p class="empty-msg">아직 탈출한 사람이 없어요.</p>'; return; }
@@ -371,10 +371,10 @@
   }
 
   function renderRoom(room, roomId) {
-    var uid = window.rgUser && window.rgUser.uid;
+    var uid = window.rgPublicId;
     var participants = room.participants || {};
     var me = uid && participants[uid];
-    var isHost = uid && room.hostUid === uid;
+    var isHost = uid && room.hostPublicId === uid;
     // 통합관리센터 관리자는 호스트가 아니어도, 비행 중이어도 방을 강제로 닫을 수 있다
     // (서버 closeRocketRoom도 동일하게 허용 — functions/src/rocket.js 참고).
     var isAdmin = !!window.rgIsAdmin;
@@ -514,9 +514,9 @@
     resultBannerEl.style.display = '';
     if (room.status === 'resolving') {
       resultBannerEl.textContent = '💥 폭발! 정산 중...';
-    } else if (res.winnerUid && !res.isBot) {
+    } else if (res.winnerPublicId && !res.isBot) {
       resultBannerEl.textContent = '👑 ' + res.winnerNickname + '님이 ' + Number(res.amount).toLocaleString('ko-KR') + '원을 획득했습니다!';
-    } else if (res.winnerUid && res.isBot) {
+    } else if (res.winnerPublicId && res.isBot) {
       resultBannerEl.textContent = '🤖 봇(' + res.winnerNickname + ')이 마지막까지 버텨 판돈이 사라졌습니다.';
     } else {
       resultBannerEl.textContent = '💥 아무도 탈출하지 못해 판돈이 사라졌습니다.';
@@ -529,7 +529,7 @@
     currentRoomId = roomId;
     lobbyEl.style.display = 'none';
     roomScreenEl.style.display = '';
-    unsubscribeRoom = fb.onValue(fb.ref(window.rgDb, 'rocketGame/rooms/' + roomId), function (snap) {
+    unsubscribeRoom = fb.onValue(fb.ref(window.rgDb, 'rocketGame/roomsPublic/' + roomId), function (snap) {
       if (!snap.exists()) {
         statusMsgEl.textContent = '방이 닫혔습니다.';
         setTimeout(backToLobby, 1200);
